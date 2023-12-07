@@ -7,6 +7,7 @@ from dotenv import dotenv_values
 
 import undetected_chromedriver
 from selenium.common import NoSuchElementException
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -33,9 +34,12 @@ def get_table_data(browser):
 
     return item_list
 
+
 def crawl_outstock_items(username: str, password: str, otp_url: str, retry=1):
     try:
-        browser = undetected_chromedriver.Chrome()
+        options = Options()
+        options.headless = True
+        browser = undetected_chromedriver.Chrome(options=options)
 
         url = 'https://sellercentral.amazon.com'
         browser.get(url)
@@ -43,6 +47,9 @@ def crawl_outstock_items(username: str, password: str, otp_url: str, retry=1):
         login_button_div = WebDriverWait(browser, 60).until(
             EC.presence_of_element_located((By.ID, 'login_pl_pnav_c'))
         )
+
+        print("Homepage loaded")
+
         time.sleep(3)
         login_button = login_button_div.find_element(By.TAG_NAME, 'a')
         login_button.click()
@@ -51,6 +58,9 @@ def crawl_outstock_items(username: str, password: str, otp_url: str, retry=1):
         username_input_field = WebDriverWait(browser, 60).until(
             EC.presence_of_element_located((By.ID, 'ap_email'))
         )
+
+        print("Login page loaded")
+
         time.sleep(5)
 
         password_input_field = browser.find_element(By.ID, 'ap_password')
@@ -68,6 +78,9 @@ def crawl_outstock_items(username: str, password: str, otp_url: str, retry=1):
         otp_input_field = WebDriverWait(browser, 30).until(
             EC.presence_of_element_located((By.ID, 'auth-mfa-otpcode'))
         )
+
+        print("OTP page loaded")
+
         time.sleep(5)
 
         x = pyotp.parse_uri(otp_url)
@@ -84,6 +97,8 @@ def crawl_outstock_items(username: str, password: str, otp_url: str, retry=1):
         )
 
         time.sleep(8)
+
+        print("Select Account page loaded")
 
         buttons = picker_body.find_elements(By.CLASS_NAME, 'picker-button')
         for button in buttons:
@@ -108,6 +123,8 @@ def crawl_outstock_items(username: str, password: str, otp_url: str, retry=1):
         out_of_stock_option = WebDriverWait(browser, 30).until(
             EC.presence_of_element_located((By.ID, 'left-filter-option-div-AGGREGATED_LISTING_TYPE_OUT_OF_STOCK'))
         )
+
+        print("Inventory management page")
 
         out_of_stock_option.click()
 
@@ -139,9 +156,10 @@ def crawl_outstock_items(username: str, password: str, otp_url: str, retry=1):
             WebDriverWait(browser, 30).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, 'kat-table-row#row-0'))
             )
-
+        browser.close()
         return total_result
-    except NoSuchElementException as e:
+    except Exception as e:
+        browser.close()
         if retry == 3:
             print("Failed the load the page, Please check your internet connection or there is problem in Amazon side")
             print(e.msg)
@@ -150,6 +168,7 @@ def crawl_outstock_items(username: str, password: str, otp_url: str, retry=1):
             print('Could not find element or page is not loaded correctly. Try again now.')
             print(e.msg)
             return crawl_outstock_items(username, password, otp_url, retry + 1)
+
 
 if __name__ == '__main__':
     config = dotenv_values(".env")

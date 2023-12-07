@@ -1,7 +1,5 @@
 # Amazon SellerCenter Out of stock scraping
 
-----------------------------------------------
-
 ## Requirements
 
 - Python 3.10
